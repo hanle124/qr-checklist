@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Checklist Bảo Trì</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body { font-family: Arial; padding: 10px; }
+    table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+    th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+    select, input[type="text"], input[type="date"] { width: 100%; }
+  </style>
+</head>
+<body>
+
+  <h2>Checklist Bảo Trì</h2>
+
+  <form id="maintenance-form">
+    <input type="hidden" id="machine-id" value="M001">
+
+    <table>
+      <thead>
+        <tr>
+          <th>Mục kiểm tra</th>
+          <th>Loại</th>
+          <th>Tần suất</th>
+          <th>Tình trạng</th>
+          <th>Người kiểm tra</th>
+          <th>Ngày sửa chữa</th>
+        </tr>
+      </thead>
+      <tbody id="checklist-body"></tbody>
+    </table>
+
+    <button type="submit">Gửi</button>
+  </form>
+
+  <script>
+    // Danh sách các mục kiểm tra
+    const checklistData = [
+      { task: "Vệ sinh bề mặt", frequency: "Hàng ngày" },
+      { task: "Kiểm tra màn hình LCD", frequency: "Hàng tuần" },
+      { task: "Kiểm tra dầu đo", frequency: "Hàng ngày" },
+      { task: "Kiểm tra Pin", frequency: "Tháng" },
+      { task: "Bôi dầu vào thanh trượt", frequency: "Hàng tuần" }
+    ];
+
+    const tbody = document.getElementById("checklist-body");
+
+    // Vẽ bảng
+    checklistData.forEach((item, index) => {
+      const row = document.createElement("tr");
+      row.innerHTML = `
+        <td>${item.task}</td>
+        <td>
+          <select name="type_${index}">
+            <option value="">--</option>
+            <option value="Bảo dưỡng">Bảo dưỡng</option>
+            <option value="Sửa chữa">Sửa chữa</option>
+          </select>
+        </td>
+        <td>${item.frequency}</td>
+        <td>
+          <select name="status_${index}">
+            <option value="">--</option>
+            <option value="Tốt">Tốt</option>
+            <option value="Hư">Hư</option>
+            <option value="Cần sửa">Cần sửa</option>
+          </select>
+        </td>
+        <td><input type="text" name="checker_${index}"></td>
+        <td><input type="date" name="repair_date_${index}"></td>
+      `;
+      tbody.appendChild(row);
+    });
+
+    // Gửi dữ liệu về Google Sheet
+    document.getElementById("maintenance-form").addEventListener("submit", function(e) {
+      e.preventDefault();
+      const machineId = document.getElementById("machine-id").value;
+      const checklist = [];
+
+      checklistData.forEach((item, index) => {
+        checklist.push({
+          task: item.task,
+          type: document.querySelector(`[name="type_${index}"]`).value,
+          frequency: item.frequency,
+          status: document.querySelector(`[name="status_${index}"]`).value,
+          checker: document.querySelector(`[name="checker_${index}"]`).value,
+          repair_date: document.querySelector(`[name="repair_date_${index}"]`).value
+        });
+      });
+
+      fetch("https://script.google.com/a/macros/eaglevina.com/s/AKfycbzUcZoyOvuuqh-evWmbBVI6YhIzUQg8AJepsVJ7JpZRzXo6-9gx9TIAjZjyI-wsPrU/exec", {
+        method: "POST",
+        body: JSON.stringify({ machine_id: machineId, checklist }),
+        headers: { "Content-Type": "application/json" }
+      })
+      .then(res => res.text())
+      .then(msg => {
+        alert("Gửi thành công!");
+      })
+      .catch(err => alert("Gửi thất bại: " + err));
+    });
+  </script>
+</body>
+</html>
